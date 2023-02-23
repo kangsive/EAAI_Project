@@ -1,1 +1,44 @@
+### websites
+
+基于聚类与机器学习的零售商品销量预测
 http://www.c-s-a.org.cn/html/2021/11/8147.htm
+
+ARIMA时间序列与LSTM神经网络的对比
+https://zhuanlan.zhihu.com/p/455008183
+
+基于机器学习方法对销售预测的研究
+https://www.fx361.com/page/2020/0407/6532009.shtml
+
+Python用RNN循环神经网络：LSTM、GRU和ARIMA对COVID-19新冠疫情新增人数预测 
+https://it.sohu.com/a/558623693_826434
+
+Predict Future Sales using Machine Learning
+https://arnav-andraskar.medium.com/predict-future-sales-using-machine-learning-9f4dc89f7e3b
+
+Predict Future Sales using XGBRegressor
+https://www.analyticsvidhya.com/blog/2021/06/predict-future-sales-using-xgbregressor/#h2_1
+
+Store Sales - Time Series Forecasting
+https://www.kaggle.com/competitions/store-sales-time-series-forecasting
+
+
+## same dataset from kaggle
+
+5 Machine Learning Techniques for Sales Forecasting
+https://towardsdatascience.com/5-machine-learning-techniques-for-sales-forecasting-598e4984b109
+
+How To Forecast Sales Using Machine Learning
+https://www.embedded-robotics.com/forecast-sales-using-machine-learning/
+
+
+***lstm多变量输入回归预测模型
+https://blog.csdn.net/weixin_28702105/article/details/113402543
+https://machinelearningmastery.com/multivariate-time-series-forecasting-lstms-keras/
+
+### github
+
+rossmann_TSA_forecasts
+https://github.com/elena-petrova/time-series-prophet
+
+5 Machine Learning Techniques for Forecasting Sales
+https://github.com/mollyliebeskind/sales_forecasting

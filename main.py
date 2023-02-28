@@ -14,20 +14,20 @@ from keras.layers import LSTM
 # load train data and preview part of the data, note that the sales should be the last column, otherwiese 
 # the some part of the codes need to modify
 # TODO - paramize the sales index when split X and y, as well as retrive inv_yhat and inv_y
-train_data = pd.read_csv("data/train.csv")
+train_data = pd.read_csv("data/bakery_train.csv")
 train_data.head(10)
 
 # check if there are null values in any of the columns
 train_data.info()
 
-# transfer date into datetime datatype
-train_data["date"] = pd.to_datetime(train_data["date"])
+# # transfer date into datetime datatype
+# train_data["date"] = pd.to_datetime(train_data["date"])
 
-# retrive data of first 3 items in store 1
-store1_data = train_data[train_data["store"]==1]
-item1 = store1_data[store1_data["item"]==1]
-item2 = store1_data[store1_data["item"]==2]
-item2 = store1_data[store1_data["item"]==3]
+# # retrive data of first 3 items in store 1
+# store1_data = train_data[train_data["store"]==1]
+# item1 = store1_data[store1_data["item"]==1]
+# item2 = store1_data[store1_data["item"]==2]
+# item2 = store1_data[store1_data["item"]==3]
 
 # # visualize daily sales of item 1
 # plt.figure(figsize=(15,5))
@@ -60,14 +60,17 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
         agg.dropna(inplace=True)
     return agg
 
-# set  params
-timesteps = 3
-features = 3
-n_obs = timesteps*features
-n_train = 365 * 2
 
 # 先测试单个商品，后面再想办法扩展到多商品预测
-items = item1.drop(['date'], axis=1)
+items = train_data.drop(['date', 'item', 'Unnamed: 0'], axis=1)
+
+# set  params
+timesteps = 7
+features = items.shape[1]
+n_obs = timesteps*features
+n_train = int(train_data.shape[0] * 0.8)
+n_epoch = 200
+
 values = items.values
 # integer encode direction
 encoder = LabelEncoder()
@@ -104,12 +107,13 @@ model.add(Dense(1))
 model.compile(loss="mae", optimizer="adam")
 
 # fit network
-history = model.fit(train_X, train_y, epochs=50, batch_size=72, validation_data=(test_X, test_y), verbose=2, shuffle=False)
+history = model.fit(train_X, train_y, epochs=n_epoch, batch_size=72, validation_data=(test_X, test_y), verbose=2, shuffle=False)
 
 # plot history
 plt.plot(history.history["loss"], label="train")
 plt.plot(history.history["val_loss"], label="test")
 plt.legend()
+plt.savefig(f"plots/e{n_epoch}_ts{timesteps}_errors.png")
 plt.show()
 
 # make a prediction
@@ -133,9 +137,11 @@ print("Test RMSE: %.3f" % rmse)
 # visualize results
 x_data = [i for i in range(1, len(inv_y)+1)]
 plt.figure(figsize=(15,5))
-plt.plot(x_data, inv_yhat)
-plt.plot(x_data, inv_y)
+plt.plot(x_data, inv_yhat, color='r', label= "Predicted sales")
+plt.plot(x_data, inv_y, color='b', label = "Real sales")
 plt.xlabel("Date")
 plt.ylabel("Daily Sales")
 plt.title("Daily Item1 Sales")
+plt.legend()
+plt.savefig(f"plots/e{n_epoch}_ts{timesteps}.png")
 plt.show()

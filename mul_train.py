@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_absolute_error
+from sklearn.utils import shuffle
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM, Dropout
@@ -14,11 +15,24 @@ from keras.layers import LSTM, Dropout
 # load train data and preview part of the data, note that the sales should be the last column, otherwiese 
 # the some part of the codes need to modify
 # TODO - paramize the sales index when split X and y, as well as retrive inv_yhat and inv_y
-data = pd.read_csv("data/bakery_train.csv")
-data.head(10)
+data = pd.read_csv("data/bakery_train_mul.csv")
 
-# check if there are null values in any of the columns
-data.info()
+# retrive data of first 3 items in store 1
+item1 = data[data["item"]=="TRADITIONAL BAGUETTE"]
+item2 = data[data["item"]=="COUPE"]
+item3 = data[data["item"]=="BAGUETTE"]
+
+item1["item"] = [1] * item1.shape[0]
+item2["item"] = [2] * item2.shape[0]
+item3["item"] = [3] * item3.shape[0]
+
+print(item1.shape)
+print(item2.shape)
+print(item3.shape)
+
+# set  params
+timesteps = 4
+n_epoch = 500
 
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     n_vars = 1 if type(data) is list else data.shape[1]
@@ -44,49 +58,54 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     return agg
 
 
-# 先测试单个商品，后面再想办法扩展到多商品预测
-items = data.drop(['date', 'item', 'Unnamed: 0'], axis=1)
+def to_reframed_data(item_data):
+    # ensure all data is float
+    item_data = item_data.astype("float32")
 
-# set  params
-timesteps = 4
-features = items.shape[1]
-n_obs = timesteps*features
-n_train = int(data.shape[0] * 0.8)
-n_epoch = 150
+    # frame as supervised learning
+    reframed_data = series_to_supervised(item_data, timesteps, 1)
 
-values = items.values
-# integer encode direction
-encoder = LabelEncoder()
-# TODO - encode all categorical variable into integer
-# ensure all data is float
-values = values.astype("float32")
+    print(reframed_data.head())
 
-# split into train and test sets
-train = values[:n_train, :]
-test = values[n_train:, :]
+    reframed_data = reframed_data.values
+
+    global n_obs
+    global features
+    features = item_data.shape[1]
+    n_obs = timesteps*features
+
+    return reframed_data
+
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaler2 = MinMaxScaler(feature_range=(0, 1))
+
+trains, tests = [], []
+for item_data in [item1, item2, item3]:
+    item_data = item_data.drop(['date', 'Unnamed: 0'], axis=1)
+    n_train = int(item_data.shape[0] * 0.8)
+    trains.append(item_data.values[:n_train,:])
+    tests.append(item_data.values[n_train:,:])
+
+train = concatenate(trains, axis=0)
+test = concatenate(tests, axis=0)
 
 # normalize feactures
-scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_train = scaler.fit_transform(train)
-scaler2 = MinMaxScaler(feature_range=(0, 1))
-scaled_test = scaler2.fit_transform(test)
-# frame as supervised learning
-reframed_train = series_to_supervised(scaled_train, timesteps, 1)
-reframed_test = series_to_supervised(scaled_test, timesteps, 1)
-# drop columns we don't want to predict, when train on multiple lag timesteps, we don't apply this
-## only varn(t) where n is the index of the column we want to predict: sales 
-# reframed.drop(reframed.columns[[i for i  in range(-2, -features-1, -1)]], axis=1, inplace=True)
-print(reframed_train.head())
+train = scaler.fit_transform(train)
+test = scaler2.fit_transform(test)
 
-reframed_train = reframed_train.values
-reframed_test = reframed_test.values
+train = to_reframed_data(train)
+test = to_reframed_data(test)
 
 # split into input and outputs
-train_X, train_y = reframed_train[:, :n_obs], reframed_train[:, -1]
-test_X, test_y = reframed_test[:, :n_obs], reframed_test[:, -1]
+train_X, train_y = train[:, :n_obs], train[:, -1]
+test_X, test_y = test[:, :n_obs], test[:, -1]
+
+# shuffle data
+train_X, train_y = shuffle(train_X, train_y, random_state=12580)
+
+print(train_X.shape)
+
 # reshape input to 3D [samples, timesteps, feactures]
-
-
 train_X = train_X.reshape((train_X.shape[0], timesteps, features))
 test_X = test_X.reshape((test_X.shape[0], timesteps, features))
 print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
@@ -96,6 +115,13 @@ model = Sequential()
 model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
 model.add(Dense(1))
 model.compile(loss="mae", optimizer="adam")
+
+# model = Sequential()
+# model.add(LSTM(64, input_shape=(train_X.shape[1], train_X.shape[2]), return_sequences=True))
+# model.add(Dropout(0.5)) 
+# model.add(LSTM(32,return_sequences=False))
+# model.add(Dense(1))
+# model.compile(loss="mae", optimizer="adam")
 
 # fit network
 history = model.fit(train_X, train_y, epochs=n_epoch, batch_size=72, validation_data=(test_X, test_y), verbose=2, shuffle=False)
@@ -114,9 +140,11 @@ test_X = test_X.reshape((test_X.shape[0], timesteps*features))
 
 # invert scaling for forecast
 inv_yhat = concatenate((test_X[:,-features:-1], yhat), axis=1)
+print(inv_yhat.shape)
+print(test.shape)
+
 inv_yhat = scaler2.inverse_transform(inv_yhat)
 inv_yhat = inv_yhat[:,-1]
-
 # invert scaling for actual
 test_y = test_y.reshape((len(test_y), 1))
 inv_y = concatenate((test_X[:,-features:-1], test_y), axis=1)
@@ -130,7 +158,7 @@ print("Test RMSE: %.3f" % rmse)
 # visualize results
 x_data = [i for i in range(1, len(inv_y)+1)]
 plt.figure(figsize=(15,5))
-plt.plot(x_data, inv_yhat, color='r', label= "Predicted sales")
+plt.plot(x_data, inv_yhat,color='r', label= "Predicted sales")
 plt.plot(x_data, inv_y, color='b', label = "Real sales")
 plt.xlabel("Date")
 plt.ylabel("Daily Sales")

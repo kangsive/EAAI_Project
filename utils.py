@@ -1,12 +1,18 @@
 import pandas as pd
 
-def bakery_data_process(file_name, item):
+def bakery_data_process(file_name, items):
     df = pd.read_csv(file_name)
     dates = df["date"].values.tolist()
     dates = sorted(list(set(dates)))
     # print(dates[0:10])
 
+    dfs = []
+    for item in items:
+        dfs.append(get_one_item(df, dates, item))
+    
+    return pd.concat(dfs, axis=0, ignore_index=True)
 
+def get_one_item(df, dates, item):
     new_dates, new_item, new_quantity, new_price = [], [], [], []
     for date in dates:
         day_info = df[df["date"]==date]
@@ -24,6 +30,6 @@ def bakery_data_process(file_name, item):
     return new_df
 
 
-item_df = bakery_data_process("data/BakerySales.csv", "TRADITIONAL BAGUETTE")
+item_df = bakery_data_process("data/BakerySales.csv", ["TRADITIONAL BAGUETTE", "COUPE", "BAGUETTE"])
 # print(item_df.head(10))
-item_df.to_csv("data/bakery_train.csv")
+item_df.to_csv("data/bakery_train_mul.csv")

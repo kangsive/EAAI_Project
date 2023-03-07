@@ -1,4 +1,5 @@
 from math import sqrt
+import numpy as np
 import pandas as pd
 from numpy import concatenate
 import matplotlib.pyplot as plt
@@ -8,12 +9,13 @@ from sklearn.utils import shuffle
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
+import joblib
 
 
 # load train data and preview part of the data, note that the sales should be the last column, otherwiese 
 # the some part of the codes need to modify
 # TODO - paramize the sales index when split X and y, as well as retrive inv_yhat and inv_y
-data = pd.read_csv("data/bakery_train_mul.csv")
+data = pd.read_csv("data/bakery_train_mul_quan.csv")
 
 # retrive data of first 3 items in store 1
 item1 = data[data["item"]=="TRADITIONAL BAGUETTE"]
@@ -29,8 +31,8 @@ print(item2.shape)
 print(item3.shape)
 
 # set  params
-timesteps = 4
-n_epoch = 500
+timesteps = 5
+n_epoch = 150
 
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     n_vars = 1 if type(data) is list else data.shape[1]
@@ -74,9 +76,6 @@ def to_reframed_data(item_data):
 
     return reframed_data
 
-scaler = MinMaxScaler(feature_range=(0, 1))
-scaler2 = MinMaxScaler(feature_range=(0, 1))
-
 trains, tests = [], []
 for item_data in [item1, item2, item3]:
     item_data = item_data.drop(['date', 'Unnamed: 0'], axis=1)
@@ -88,8 +87,10 @@ train = concatenate(trains, axis=0)
 test = concatenate(tests, axis=0)
 
 # normalize feactures
+scaler = MinMaxScaler(feature_range=(0, 1))
 train = scaler.fit_transform(train)
-test = scaler2.fit_transform(test)
+test = scaler.transform(test)
+joblib.dump(scaler, "pkl/scaler.pkl")
 
 train = to_reframed_data(train)
 test = to_reframed_data(test)
@@ -131,22 +132,21 @@ plt.legend()
 plt.savefig(f"plots/e{n_epoch}_ts{timesteps}_errors.png")
 plt.show()
 
+joblib.dump(model, "pkl/model.pkl")
+
 # make a prediction
 yhat = model.predict(test_X)
 
-test_X = test_X.reshape((test_X.shape[0], timesteps*features))
-
-# invert scaling for forecast
-inv_yhat = concatenate((test_X[:,-features:-1], yhat), axis=1)
-print(inv_yhat.shape)
-print(test.shape)
-
-inv_yhat = scaler2.inverse_transform(inv_yhat)
+# invert scaling for prediction
+yhat = yhat.reshape(-1, 1)
+yhat = np.repeat(yhat, repeats=features, axis=1)
+inv_yhat = scaler.inverse_transform(yhat)
 inv_yhat = inv_yhat[:,-1]
+
 # invert scaling for actual
-test_y = test_y.reshape((len(test_y), 1))
-inv_y = concatenate((test_X[:,-features:-1], test_y), axis=1)
-inv_y = scaler2.inverse_transform(inv_y)
+test_y = test_y.reshape((-1, 1))
+test_y = np.repeat(test_y, repeats=features, axis=1)
+inv_y = scaler.inverse_transform(test_y)
 inv_y = inv_y[:,-1]
 
 # calculate RMSE

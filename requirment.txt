@@ -1,5 +1,0 @@
-tensorflow
-pandas
-matplotlib
-scikit-learn
-xgboost

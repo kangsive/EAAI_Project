@@ -26,10 +26,11 @@ def get_one_item(df, dates, item):
     new_df = pd.DataFrame({"date": new_dates, "item": new_item, "quantity": new_quantity, "price": new_price})
     new_df["date"] = pd.to_datetime(new_df["date"])
     new_df["day_of_week"] = new_df["date"].apply(lambda x: x.weekday())
-    new_df["sales"] = new_df["quantity"] * new_df["price"]
+    new_df = new_df[["date", "item", "price", "day_of_week", "quantity"]]
+    # new_df["sales"] = new_df["quantity"] * new_df["price"]
     return new_df
 
 
 item_df = bakery_data_process("data/BakerySales.csv", ["TRADITIONAL BAGUETTE", "COUPE", "BAGUETTE"])
 # print(item_df.head(10))
-item_df.to_csv("data/bakery_train_mul.csv")
+item_df.to_csv("data/bakery_train_mul_quan.csv")

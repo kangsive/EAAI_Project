@@ -9,20 +9,26 @@ app.config['UPLOAD_FOLDER'] = "data/"
 @app.before_first_request
 def init():
     global model
-    model = BakeryModel(timestep=4, predict_len=1, features=5)
+    model = BakeryModel(timestep=5, predict_len=1, features=4)
+    model.load_model()
 
 
 @app.route('/bakery/predict', methods=['POST', 'GET'])
 def predict():
-    if request.method == 'POST':
+    if model.model == None:
+        response = {"result": "No pretrained model, please train a model first"}
+    elif request.method == 'POST':
         data_info = request.form
         if data_info:
+            if data_info.get("predict_variable"):
+                predict_variable = data_info.get("predict_variable")
             if data_info.get("short_history"):
                 predict_data = data_info.get("short_history")
-                # result = model.predict(predict_data)
-                result = {"result": "predict result"}
+                predict_data = eval(predict_data)
+                prediction = model.predict(predict_data, predict_variable)[-1]
+                result = {"result": str(prediction)}
         response = result
-        # data["response"] = response
+        print(response)
 
     return json.dumps(response)
 
@@ -34,11 +40,13 @@ def train():
         file_info = request.files["file"]
 
         if data_info and file_info:
+            features = eval(data_info.get("features"))
+            model.features = len(features)
             file_name = file_info.filename
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
             file_info.save(file_path)
-            # result = model.train_model()
-            result = {"result": "train result"}
+            history = model.train_model(data_path=file_path, features=features, evaluate=False)
+            result = {"history": history}
         response = result
 
     return json.dumps(response)

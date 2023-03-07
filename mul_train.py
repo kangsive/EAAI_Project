@@ -1,15 +1,13 @@
 from math import sqrt
 import pandas as pd
-import seaborn as sns
 from numpy import concatenate
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_absolute_error
 from sklearn.utils import shuffle
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.layers import LSTM, Dropout
+from keras.layers import LSTM
 
 
 # load train data and preview part of the data, note that the sales should be the last column, otherwiese 

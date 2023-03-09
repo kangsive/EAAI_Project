@@ -25,8 +25,8 @@ def predict():
             if data_info.get("short_history"):
                 predict_data = data_info.get("short_history")
                 predict_data = eval(predict_data)
-                prediction = model.predict(predict_data, predict_variable)[-1]
-                result = {"result": str(prediction)}
+                prediction = model.predict(predict_data, predict_variable)
+                result = {"result": [int(one) for one in prediction.tolist()]}
         response = result
         print(response)
 

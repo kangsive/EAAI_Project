@@ -23,6 +23,7 @@ class BakeryModel:
         if os.path.exists(os.path.join(os.getcwd(), "pkl/scaler.pkl")):
             self.predict_scaler = joblib.load("pkl/scaler.pkl")
         else:
+            os.makedirs(os.path.join(os.getcwd(), "pkl"))
             self.predict_scaler = None
         
         # set params
@@ -129,6 +130,8 @@ class BakeryModel:
         plt.plot(history.history["val_loss"], label="test")
         plt.legend()
         date = datetime.today().strftime('%Y-%m-%d')
+        if not os.path.exists(os.path.join(os.getcwd(), "plots")):
+            os.makedirs(os.path.join(os.getcwd(), "plots"))
         plt.savefig(f"plots/date{date}_e{self.n_epoch}_ts{self.timesteps}_errors.png")
         
         if evaluate:

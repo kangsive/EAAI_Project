@@ -7,6 +7,6 @@ WORKDIR /root/bakery
 COPY ./requirements.txt ./
 RUN pip install --upgrade pip \
     && pip install -U setuptools \
-    && pip install -r requirements.txt
+    && pip install --no-cache-dir -r requirements.txt
 
 CMD uwsgi --ini uwsgi.ini

@@ -1,6 +1,5 @@
 from math import sqrt
 import pandas as pd
-import seaborn as sns
 from numpy import concatenate
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
@@ -61,15 +60,14 @@ encoder = LabelEncoder()
 # ensure all data is float
 values = values.astype("float32")
 
-# split into train and test sets
-train = values[:n_train, :]
-test = values[n_train:, :]
-
 # normalize feactures
 scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_train = scaler.fit_transform(train)
-scaler2 = MinMaxScaler(feature_range=(0, 1))
-scaled_test = scaler2.fit_transform(test)
+scaled_values = scaler.fit_transform(values)
+
+# split into train and test sets
+scaled_train = scaled_values[:n_train, :]
+scaled_test = scaled_values[n_train:, :]
+
 # frame as supervised learning
 reframed_train = series_to_supervised(scaled_train, timesteps, 1)
 reframed_test = series_to_supervised(scaled_test, timesteps, 1)
@@ -114,13 +112,13 @@ test_X = test_X.reshape((test_X.shape[0], timesteps*features))
 
 # invert scaling for forecast
 inv_yhat = concatenate((test_X[:,-features:-1], yhat), axis=1)
-inv_yhat = scaler2.inverse_transform(inv_yhat)
+inv_yhat = scaler.inverse_transform(inv_yhat)
 inv_yhat = inv_yhat[:,-1]
 
 # invert scaling for actual
 test_y = test_y.reshape((len(test_y), 1))
 inv_y = concatenate((test_X[:,-features:-1], test_y), axis=1)
-inv_y = scaler2.inverse_transform(inv_y)
+inv_y = scaler.inverse_transform(inv_y)
 inv_y = inv_y[:,-1]
 
 # calculate RMSE

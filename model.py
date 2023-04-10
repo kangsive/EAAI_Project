@@ -27,13 +27,12 @@ class BakeryModel:
             self.predict_scaler = None
         
         # set params
-        self.timesteps = 5
         self.n_epoch = 150
         self.split_rate = 0.8
 
     def build_model(self):
         self.model = Sequential()
-        self.model.add(LSTM(50, input_shape=(self.timesteps, self.features)))
+        self.model.add(LSTM(50, input_shape=(self.timestep, self.features)))
         self.model.add(Dense(self.predict_len))
         self.model.compile(loss="mae", optimizer="adam")
 
@@ -99,7 +98,7 @@ class BakeryModel:
         test = self.__to_reframed_data(test, self.timestep, self.predict_len)
 
         # split into input and outputs
-        n_obs = self.timesteps*self.features
+        n_obs = self.timestep*self.features
         train_X, train_y = train[:, :n_obs], train[:, -self.predict_len:]
         test_X, test_y = test[:, :n_obs], test[:, -self.predict_len:]
 
@@ -132,7 +131,7 @@ class BakeryModel:
         date = datetime.today().strftime('%Y-%m-%d')
         if not os.path.exists(os.path.join(os.getcwd(), "plots")):
             os.makedirs(os.path.join(os.getcwd(), "plots"))
-        plt.savefig(f"plots/date{date}_e{self.n_epoch}_ts{self.timesteps}_errors.png")
+        plt.savefig(f"plots/date{date}_e{self.n_epoch}_ts{self.timestep}_errors.png")
         
         if evaluate:
             # make a prediction
@@ -162,7 +161,7 @@ class BakeryModel:
             plt.xlabel("date scale")
             plt.ylabel("Daily y")
             plt.legend()
-            plt.savefig(f"plots/date{date}_e{self.n_epoch}_ts{self.timesteps}_evaluate.png")
+            plt.savefig(f"plots/date{date}_e{self.n_epoch}_ts{self.timestep}_evaluate.png")
 
         self.model = model
         self.save_model()
